@@ -1,15 +1,18 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import OrdinalEncoder
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler
+
 
 def feature_engineering(df):
 
-    data_copy = df.copy()        
-    threshold = len(data_copy) * 0.1
-    data_copy.dropna(thresh = 0.9*len(data_copy), axis=1, inplace=True)
-    data_copy.dropna(inplace=True)
-
+    data_copy = df.copy()
+    
+    try:
+        data_copy.drop(columns=["patient_id", "lesion_id", "iddx_full", "iddx_1", "iddx_2", "iddx_3", "iddx_4", "iddx_5", "mel_mitotic_index", "mel_thick_mm", 
+                     "tbp_lv_dnn_lesion_confidence","attribution", "copyright_license"], inplace=True)
+    except KeyError:
+        pass
+    
     df = pd.DataFrame(data_copy)
     
     df["lesion_size_ratio"] = df["tbp_lv_minorAxisMM"] / df["clin_size_long_diam_mm"]
@@ -40,19 +43,27 @@ def feature_engineering(df):
     df["symmetry_perimeter_interaction"] = df["tbp_lv_symm_2axis"] * df["tbp_lv_perimeterMM"]
     df["comprehensive_lesion_index"] = (df["tbp_lv_area_perim_ratio"] + df["tbp_lv_eccentricity"] + df["tbp_lv_norm_color"] + df["tbp_lv_symm_2axis"]) / 4
     
-    numerical_columns = df.select_dtypes(include=[np.number]).columns.tolist()
-    scaler = StandardScaler()
-    for col in numerical_columns:
-        df[col] = scaler.fit_transform(df[[col]])
-        
-    categorical_columns = df.select_dtypes(include=[object]).columns.tolist()
-    categorical_columns.remove('isic_id')
-    categorical_columns.remove('patient_id')
+    df.replace([np.inf, -np.inf], -5.0, inplace=True)    
+                   
+    numerical_columns = ["target", "age_approx", "clin_size_long_diam_mm", "tbp_lv_A", "tbp_lv_Aext", "tbp_lv_B", "tbp_lv_Bext", "tbp_lv_C", "tbp_lv_Cext",
+                         "tbp_lv_H", "tbp_lv_Hext", "tbp_lv_L", "tbp_lv_Lext", "tbp_lv_areaMM2", "tbp_lv_area_perim_ratio", "tbp_lv_color_std_mean", "tbp_lv_deltaA",
+                         "tbp_lv_deltaB", "tbp_lv_deltaL", "tbp_lv_deltaLB", "tbp_lv_deltaLBnorm", "tbp_lv_eccentricity", "tbp_lv_minorAxisMM", "tbp_lv_nevi_confidence",
+                         "tbp_lv_norm_border", "tbp_lv_norm_color", "tbp_lv_perimeterMM", "tbp_lv_radial_color_std_max", "tbp_lv_stdL", "tbp_lv_stdLExt", "tbp_lv_symm_2axis",
+                         "tbp_lv_symm_2axis_angle", "tbp_lv_x", "tbp_lv_y", "tbp_lv_z", "lesion_size_ratio", "lesion_shape_index", "hue_contrast",
+                         "luminance_contrast", "lesion_color_difference", "border_complexity", "color_uniformity", "3d_position_distance", "perimeter_to_area_ratio", "lesion_visibility_score",
+                         "symmetry_border_consistency", "color_consistency", "size_age_interaction", "hue_color_std_interaction", "lesion_severity_index", "shape_complexity_index",
+                         "color_contrast_index", "log_lesion_area", "normalized_lesion_size", "mean_hue_difference", "std_dev_contrast", "color_shape_composite_index", "3d_lesion_orientation",
+                         "overall_color_difference", "symmetry_perimeter_interaction", "comprehensive_lesion_index"]
+    
+    categorical_columns = ["sex", "anatom_site_general", "image_type", "tbp_tile_type", "tbp_lv_location", "tbp_lv_location_simple"]
     
     encoder = OrdinalEncoder()
     
+    for col in df.columns:
+        if col not in numerical_columns and col not in categorical_columns:
+            df.drop(columns=[col], inplace=True)
+    
     for col in categorical_columns:
         df[col] = encoder.fit_transform(df[[col]])
-        df[col] = scaler.fit_transform(df[[col]])
-     
+         
     return df
