@@ -57,10 +57,12 @@ def feature_engineering(df):
     
     categorical_columns = ["sex", "anatom_site_general", "image_type", "tbp_tile_type", "tbp_lv_location", "tbp_lv_location_simple"]
     
+    id_columns = ["isic_id"]
+    
     encoder = OrdinalEncoder()
     
     for col in df.columns:
-        if col not in numerical_columns and col not in categorical_columns:
+        if col not in numerical_columns and col not in categorical_columns and col not in id_columns:
             df.drop(columns=[col], inplace=True)
     
     for col in categorical_columns:
