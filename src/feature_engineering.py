@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import OrdinalEncoder, StandardScaler
-
+from sklearn.experimental import enable_iterative_imputer
+from sklearn.impute import IterativeImputer
 
 def feature_engineering(df):
 
@@ -14,6 +15,8 @@ def feature_engineering(df):
         pass
     
     df = pd.DataFrame(data_copy)
+    df["sex"] = df["sex"].fillna("missing", inplace=True)
+    df["anatom_site_general"] = df["anatom_site_general"].fillna("missing", inplace=True)
     
     df["lesion_size_ratio"] = df["tbp_lv_minorAxisMM"] / df["clin_size_long_diam_mm"]
     df["lesion_shape_index"] = df["tbp_lv_areaMM2"] / (df["tbp_lv_perimeterMM"] ** 2)
@@ -43,7 +46,10 @@ def feature_engineering(df):
     df["symmetry_perimeter_interaction"] = df["tbp_lv_symm_2axis"] * df["tbp_lv_perimeterMM"]
     df["comprehensive_lesion_index"] = (df["tbp_lv_area_perim_ratio"] + df["tbp_lv_eccentricity"] + df["tbp_lv_norm_color"] + df["tbp_lv_symm_2axis"]) / 4
     
-    df.replace([np.inf, -np.inf], -5.0, inplace=True)    
+    df.replace([np.inf, -np.inf], -5.0, inplace=True)
+    imputer = IterativeImputer()
+    df[['age_approx', 'color_uniformity', 'size_age_interaction', 'normalized_lesion_size']] = imputer.fit_transform(
+    df[['age_approx', 'color_uniformity', 'size_age_interaction', 'normalized_lesion_size']])
                    
     numerical_columns = ["target", "age_approx", "clin_size_long_diam_mm", "tbp_lv_A", "tbp_lv_Aext", "tbp_lv_B", "tbp_lv_Bext", "tbp_lv_C", "tbp_lv_Cext",
                          "tbp_lv_H", "tbp_lv_Hext", "tbp_lv_L", "tbp_lv_Lext", "tbp_lv_areaMM2", "tbp_lv_area_perim_ratio", "tbp_lv_color_std_mean", "tbp_lv_deltaA",
